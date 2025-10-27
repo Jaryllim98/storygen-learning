@@ -5,6 +5,25 @@ import { Moon, Sun, Mic, MicOff, Wifi, WifiOff } from 'lucide-react';
 import { useTheme } from "next-themes";
 import StoryFrames from "@/components/story-frames";
 
+// Add a health check to the backend
+useEffect(() => {
+  const checkBackendHealth = async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    try {
+      const response = await fetch(`${baseUrl}/health`);
+      if (response.ok) {
+        setBackendStatus('healthy');
+      } else {
+        setBackendStatus('unhealthy');
+      }
+    } catch (error) {
+      setBackendStatus('unhealthy');
+    }
+  };
+
+  checkBackendHealth();
+}, []);
+
 interface WebSocketMessage {
   type: string;
   data?: string;
@@ -42,6 +61,7 @@ export default function Home() {
   const [keywords, setKeywords] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any | null>(null);
+  const [backendStatus, setBackendStatus] = useState('checking');
   
   // WebSocket and story generation state
   const [isConnected, setIsConnected] = useState(false);
@@ -344,26 +364,28 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center px-4 py-8 md:py-16">
       {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 flex items-center gap-3">
-        {/* Connection Status Indicator */}
+        {/* Backend Status Indicator */}
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-sm">
-          {isConnecting ? (
+          {backendStatus === 'checking' && (
             <>
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-              <span className="text-yellow-600 dark:text-yellow-400">Connecting...</span>
+              <span className="text-yellow-600 dark:text-yellow-400">Checking...</span>
             </>
-          ) : isConnected ? (
+          )}
+          {backendStatus === 'healthy' && (
             <>
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-green-600 dark:text-green-400">Connected</span>
             </>
-          ) : (
+          )}
+          {backendStatus === 'unhealthy' && (
             <>
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-red-600 dark:text-red-400">Disconnected</span>
+              <span className="text-red-600 dark:text-red-400">Error</span>
             </>
           )}
         </div>
-        
+
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors"
